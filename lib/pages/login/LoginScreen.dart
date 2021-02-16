@@ -20,8 +20,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
   final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
 
-  Future<void> checkLogin() async {
-    if (await Provider.of<DeliveryBoy>(context, listen: false).checkLogin()) {
+  Future<void> checkLogin(BuildContext context) async {
+    if (await Provider.of<DeliveryBoy>(context, listen: false)
+            .checkLogin(context) &&
+        mounted) {
       Future.delayed(Duration(seconds: 2), () {
         setState(() {
           flag = false;
@@ -39,7 +41,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     // Provider.of<DeliveryBoy>(context, listen: false).deleteUserId();
     if (flag && !nextPage) {
-      checkLogin();
+      checkLogin(context);
     }
     return Scaffold(
       key: _scaffoldKey,
@@ -110,7 +112,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 String temp = await Provider.of<DeliveryBoy>(
                                         context,
                                         listen: false)
-                                    .getUserDetails(phno, pass);
+                                    .getUserDetails(phno, pass, context);
                                 if (temp == "Login done!") {
                                   Future.delayed(Duration(seconds: 1), () {
                                     Navigator.of(context)

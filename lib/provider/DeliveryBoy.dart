@@ -1,5 +1,6 @@
 import 'package:delivery_boy/model/DeliveryBoyModel.dart';
 import 'package:delivery_boy/request.dart';
+import 'package:delivery_boy/services/PushNotificationManager.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -27,16 +28,17 @@ class DeliveryBoy extends ChangeNotifier {
     pass = null;
   }
 
-  Future<bool> checkLogin() async {
+  Future<bool> checkLogin(BuildContext context) async {
     await fetchUserId();
     if (pass != null && phno != null) {
-      getUserDetails(phno, pass);
+      getUserDetails(phno, pass, context);
     }
     return pass == null || phno == null;
   }
 
   var responseBody;
-  Future<String> getUserDetails(String phno, String pass) async {
+  Future<String> getUserDetails(
+      String phno, String pass, BuildContext context) async {
     this.phno = phno;
     this.pass = pass;
     Map<String, String> body = {
@@ -50,6 +52,7 @@ class DeliveryBoy extends ChangeNotifier {
         return responseBody['errormessage'];
       } else {
         deliveryBoy = DeliveryBoyModel.fromJson(responseBody);
+        PushNotificationsManager.init(context);
         storeUserId();
         return "Login done!";
       }
