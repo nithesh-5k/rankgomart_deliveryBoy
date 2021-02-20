@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:delivery_boy/const.dart';
@@ -21,9 +22,10 @@ class OrdersMainPage extends StatefulWidget {
 }
 
 class _OrdersMainPageState extends State<OrdersMainPage> {
-  List<IOrder> everyOrders = [], presentOrders = [];
-  var responseBody;
+  List<IOrder> everyOrders = [], presentOrders = [], checkOrders = [];
+  var responseBody, responseBody1;
   bool current = true, flag = false;
+  int newOrders = 0;
 
   final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
 
@@ -34,8 +36,6 @@ class _OrdersMainPageState extends State<OrdersMainPage> {
   }
 
   Future<void> getOrders() async {
-    everyOrders.clear();
-    presentOrders.clear();
     Map<String, String> body = {
       "custom_data": "getdeliveryboyorderlist",
       "deliveryBoyId": Provider.of<DeliveryBoy>(context, listen: false)
@@ -48,6 +48,9 @@ class _OrdersMainPageState extends State<OrdersMainPage> {
       if (responseBody['appresponse'] == "success") {
         var temp = responseBody['orderList'];
         if (mounted) {
+          everyOrders.clear();
+          presentOrders.clear();
+          newOrders = 0;
           setState(() {
             for (int i = 0; i < temp.length; i++) {
               if (temp[i]['mainCategoryId'] == 1) {
@@ -69,9 +72,53 @@ class _OrdersMainPageState extends State<OrdersMainPage> {
     }
   }
 
+  String deliveryBoyID;
+  Future<void> checkOrder() async {
+    print("checking");
+    Map<String, String> body = {
+      "custom_data": "getdeliveryboyorderlist",
+      "deliveryBoyId": deliveryBoyID,
+      "orderCurrentStatus": ""
+    };
+    responseBody1 = await postRequest("API/deliveryboy_api.php", body);
+    if (responseBody1['success'] == null ? false : responseBody1['success']) {
+      if (responseBody1['appresponse'] == "success") {
+        var temp = responseBody1['orderList'];
+        if (mounted) {
+          checkOrders.clear();
+          for (int i = 0; i < temp.length; i++) {
+            if (temp[i]['mainCategoryId'] == 1) {
+              checkOrders.add(GroceryOrder.fromJson(temp[i]));
+            } else {
+              if (temp[i]['mainCategoryId'] == 2) {
+                checkOrders.add(HotelOrder.fromJson(temp[i]));
+              } else {
+                if (temp[i]['mainCategoryId'] == 3) {
+                  checkOrders.add(BakeryOrder.fromJson(temp[i]));
+                }
+              }
+            }
+          }
+        }
+        if (newOrders != checkOrders.length - everyOrders.length) {
+          print("new order --- ${checkOrders.length} + ${everyOrders.length}");
+          setState(() {
+            newOrders = checkOrders.length - everyOrders.length;
+          });
+        }
+      }
+    }
+    Future.delayed(Duration(seconds: 30), () {
+      checkOrder();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     if (responseBody != null) {
+      deliveryBoyID = Provider.of<DeliveryBoy>(context, listen: false)
+          .deliveryBoy
+          .deliveryboyId;
       presentOrders.clear();
       for (int i = 0; i < everyOrders.length; i++) {
         if (everyOrders[i].orderCurrentStatus != "rejected" &&
@@ -82,6 +129,11 @@ class _OrdersMainPageState extends State<OrdersMainPage> {
     } else {
       Future.delayed(Duration(milliseconds: 500), () {
         getOrders();
+      });
+    }
+    if (responseBody1 == null) {
+      Future.delayed(Duration(seconds: 30), () {
+        checkOrder();
       });
     }
     return Scaffold(
@@ -96,11 +148,28 @@ class _OrdersMainPageState extends State<OrdersMainPage> {
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
         ),
         actions: [
-          IconButton(
-            icon: Icon(Icons.refresh_rounded),
-            onPressed: () {
-              getOrders();
-            },
+          Stack(
+            children: [
+              IconButton(
+                icon: Icon(Icons.refresh_rounded),
+                onPressed: () {
+                  getOrders();
+                },
+              ),
+              Positioned(
+                top: 5,
+                right: 23,
+                child: Visibility(
+                  visible: newOrders == 0 ? false : true,
+                  child: Container(
+                    padding: EdgeInsets.all(4),
+                    child: Center(child: Text("$newOrders")),
+                    decoration: BoxDecoration(
+                        shape: BoxShape.circle, color: Colors.red),
+                  ),
+                ),
+              ),
+            ],
           ),
           IconButton(
               icon: Icon(
