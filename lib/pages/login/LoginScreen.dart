@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:delivery_boy/const.dart';
 import 'package:delivery_boy/pages/orders/ordersMainPage.dart';
 import 'package:delivery_boy/provider/DeliveryBoy.dart';
+import 'package:delivery_boy/services/getData.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -21,6 +22,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
 
   Future<void> checkLogin(BuildContext context) async {
+    await Data.getAPIData();
     if (await Provider.of<DeliveryBoy>(context, listen: false)
             .checkLogin(context) &&
         mounted) {
